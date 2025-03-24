@@ -1,0 +1,88 @@
+#include<iostream>
+using namespace std;
+
+class Device{
+    protected:
+    string deviceId;
+    string deviceType;
+    double powerRating;
+    bool status;
+    public:
+    Device(string deviceId, string deviceType, double powerRating, bool status){
+        this->deviceId=deviceId;
+        this->deviceType=deviceType;
+        this->powerRating=powerRating;
+        this->status=status;
+    }
+    virtual void turnOn(){
+        status=true;
+        cout<<"Device on"<<endl;
+    }
+    virtual void turnOff(){
+        status=false;
+        cout<<"Device off"<<endl;
+    }
+};
+class Lights : public Device{
+    protected:
+    float speedFactor;
+    public:
+    Lights(string deviceId, string deviceType, double powerRating, bool status, ) 
+        : Device(deviceId, deviceType, powerRating, status) {}
+    void turnOn () override{
+        status=true;
+        cout<<"Lights on"<<endl;
+    }
+    void turnOff() override {
+        status=false;
+        cout<<"Lights off"<<endl;
+    }
+    double calculatePowerUsage(int hour){
+        return powerRating*hours;
+    }
+};
+class Fans : public Device{
+    protected:
+    float speedFactor;
+    public:
+    Fans(string deviceId, string deviceType, double powerRating, bool status,float speedFactor) 
+        : Device(deviceId, deviceType, powerRating, status), speedFactor(speedFactor) {}
+      void turnOn () override{
+        status=true;
+        cout<<"Fans on"<<endl;
+    }
+    void turnOff() override {
+        status=false;
+        cout<<"Fans off"<<endl;
+    }
+    double calculatePowerUsage(int hour){
+        return powerRating*hours*speedFactor;
+    }
+};
+class AirConditioner: public Device{
+    protected:
+    double currentTemp;
+    public:
+    AirConditioner(string deviceId, string deviceType, double powerRating, bool status,float currentTemp) 
+        : Device(deviceId, deviceType, powerRating, status), currentTemp(currentTemp) {}
+       void turnOn (float temp) override{
+        status=true;
+        currentTemp=temp;
+        cout<<"Airconditioner on"<<endl;
+    }
+    void turnOff(float temp) override {
+        status=false;
+        currentTemp=temp;
+        cout<<"Airconditioner off"<<endl;
+    } 
+    double calculatePowerUsage(int hour, float desiredTemp){
+        return powerRating*hours*(1-(currentTemp-desiredTemp)/100);
+    }
+};
+class SecuritySystems : public Device{
+    protected:
+    string logs;
+    public: 
+     Fans(string deviceId, string deviceType, double powerRating, bool status, string logs) 
+        : Device(deviceId, deviceType, powerRating, status),  {}
+};
