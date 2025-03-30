@@ -1,20 +1,16 @@
 #include <iostream>
-#include <string>
-
 using namespace std;
 
-class Device
+class DeviceManagement
 {
 protected:
-    string id;
-    string type;
+    string deviceID;
+    string deviceType;
     double powerRating;
     bool status;
 
 public:
-    Device(string i, string t, double p) : id(i), type(t), powerRating(p), status(false)
-    {
-    }
+    DeviceManagement(string id, string type, double pR, bool s) : deviceID(id), deviceType(type), powerRating(pR), status(s) {}
 
     virtual void turnOn()
     {
@@ -27,135 +23,222 @@ public:
     }
 
     virtual double calculatePowerUsage(int hours) = 0;
+
+    string getDeviceID() const { return deviceID; }
+    string getDeviceType() const { return deviceType; }
+    bool getStatus() const { return status; }
 };
 
-class Light : public Device
+class Light : public DeviceManagement
 {
 public:
-    double calculatePowerUsage(int hours)
+    Light(string id, string type, double pR, bool s) : DeviceManagement(id, type, pR, s) {}
+
+    void turnOn() override
+    {
+        DeviceManagement :: turnOn();
+        cout << deviceType << " [ID: " << deviceID << "] turned ON." << endl;
+    }
+
+    void turnOff() override
+    {
+        DeviceManagement :: turnOff();
+        cout << deviceType << " [ID: " << deviceID << "] turned OFF." << endl;
+    }
+
+    double calculatePowerUsage(int hours) override
     {
         return powerRating * hours;
     }
 };
 
-class Fan : public Device
+class Fan : public DeviceManagement
 {
-private:
-    int speedFactor;
+    double speedFactor;
 
 public:
-    Fan(string i, string t, double p, int sF) : Device(i, t, p), speedFactor(sF)
+    Fan(string id, string type, double pR, bool s, double sF) : DeviceManagement(id, type, pR, s), speedFactor(sF) {}
+
+    void turnOn() override
     {
+        DeviceManagement :: turnOn();
+        cout << deviceType << " [ID: " << deviceID << "] turned ON at Speed " << speedFactor << "." << endl;
     }
 
-    double calculatePowerUsage(int hours)
+    void turnOff() override
+    {
+        DeviceManagement :: turnOff();
+        cout << deviceType << " [ID: " << deviceID << "] turned OFF." << endl;
+    }
+
+    double calculatePowerUsage(int hours) override
     {
         return powerRating * hours * speedFactor;
     }
 };
 
-class AC : public Device
+class AC : public DeviceManagement
 {
-private:
-    float currentTemp;
-    float desiredTemp;
+    double currentTemp;
+    double desiredTemp;
 
 public:
-    AC(string i, string t, double p, float dT) : Device(i, t, p), desiredTemp(dT)
+    AC(string id, string type, double pR, bool s, double cT, double dT) : DeviceManagement(id, type, pR, s), currentTemp(cT), desiredTemp(dT) {}
+
+    void turnOn() override
     {
+        if (desiredTemp < currentTemp)
+        {
+            DeviceManagement :: turnOn();
+            cout << deviceType << " [ID: " << deviceID << "] turned ON. Cooling to " << desiredTemp << "\xF8 C." << endl;
+            currentTemp = desiredTemp;
+        }
     }
 
-    void turnOn()
+    void turnOff() override
     {
-        status = true;
-        cout << "Current Temp: ";
-        cin >> currentTemp;
+        if (desiredTemp == currentTemp)
+        {
+            DeviceManagement :: turnOff();
+            cout << deviceType << " [ID: " << deviceID << "] turned OFF." << endl;
+        }
     }
 
-    double calculatePowerUsage(int hours)
+    double calculatePowerUsage(int hours) override
     {
         return powerRating * hours * (1 - (currentTemp - desiredTemp) / 100);
     }
 };
 
-class SecuritySystem : public Device
+class SecuritySystems : public DeviceManagement
 {
-private:
-    int userAccessLvl;
-    string userRole;
-    string logs; // Logs stored as a single string
+    const string password;
 
 public:
-    friend class MaintainanceTool;
-    friend void accessSecurityLogs(const SecuritySystem &system);
+    SecuritySystems(string id, string type, double pR, bool s, string pwd) : DeviceManagement(id, type, pR, s), password(pwd) {}
 
-    SecuritySystem(string i, string t, double p, float u, string uR) : Device(i, t, p), userAccessLvl(u), userRole(uR), logs("")
+    void turnOn() override
     {
+        string p;
+        cout << "Enter password to turn on the security systems: ";
+        cin >> p;
+        if (p == password)
+        {
+            DeviceManagement :: turnOn();
+            cout << deviceType << " [ID: " << deviceID << "] activated." << endl;
+        }
+        else
+        {
+            cout << "Incorrect password. Security system remains deactivated." << endl;
+        }
     }
 
-    void turnOff()
+    void turnOff() override
     {
-        if (userAccessLvl == 0)
+        string p;
+        cout << "Enter password to turn off the security systems: ";
+        cin >> p;
+        if (p == password)
         {
-            cout << "Not Authorized" << endl;
-            logs += "Unauthorized attempt to turn off the system.\n";
-            return;
+            DeviceManagement :: turnOff();
+            cout << deviceType << " [ID: " << deviceID << "] deactivated." << endl;
         }
-
-        status = false;
-        logs += "System turned off.\n";
+        else
+        {
+            cout << "Incorrect password. Security system remains activated." << endl;
+        }
     }
 
-    double calculatePowerUsage(int hours)
+    double calculatePowerUsage(int hours) override
     {
-        if (userAccessLvl == 0)
-        {
-            cout << "Not Authorized" << endl;
-            logs += "Unauthorized attempt to calculate power usage.\n";
-            return 0;
-        }
+        return (status) ? 100 * hours : 0;
+    }
 
-        double usage = powerRating * hours;
-        logs += "Power usage calculated: " + to_string(usage) + " units.\n";
-        return usage;
+    friend class MaintenanceTool;
+};
+
+class UserManagement
+{
+protected:
+    string userID;
+    string userRole;
+    int accessLevel;
+
+public:
+    UserManagement(string id, string role, int aL) : userID(id), userRole(role), accessLevel(aL) {}
+
+    virtual void viewAccessibleDevices() = 0;
+
+    string getUserID() const { return userID; }
+    string getUserRole() const { return userRole; }
+    int getAccessLevel() const { return accessLevel; }
+};
+
+class RegularUser : public UserManagement
+{
+public:
+    RegularUser(string id, string role, int aL) : UserManagement(id, role, aL) {}
+
+    void viewAccessibleDevices() override
+    {
+        cout << "Regular Users can view lights, fans and ACs." << endl;
     }
 };
 
-class MaintainanceTool
+class MaintenanceStaff : public UserManagement
 {
-private:
-    string userRole;
-
 public:
-    MaintainanceTool(string u) : userRole(u)
+    MaintenanceStaff(string id, string role, int aL) : UserManagement(id, role, aL) {}
+
+    void viewAccessibleDevices() override
     {
+        cout << "Maintenance Staff can view all devices including Security Systems." << endl;
     }
 
-    void reset(SecuritySystem &system)
-    {
-        if (userRole != "Maintenance")
-        {
-            cout << "Not authorized";
-            return;
-        }
+    friend void accessSecurityLogs(MaintenanceStaff &);
+};
 
-        system.logs = "";
-        cout << "Cleared" << endl;
+class MaintenanceTool
+{
+public:
+    void resetSecurity(SecuritySystems &s)
+    {
+        s.status = false;
+        cout << "Security System reset by Maintenance Tool." << endl;
     }
 };
 
-void accessSecurityLogs(const SecuritySystem &system)
+void accessSecurityLogs(MaintenanceStaff &m)
 {
-    if (system.userRole != "Maintenance")
-    {
-        cout << "Not authorized";
-        return;
-    }
-
-    cout << "Accessing logs:\n"
-         << system.logs;
+    cout << m.getUserID() << " has accessed the security logs." << endl;
 }
 
 int main()
 {
+    Light light1("L001", "LED Light", 50, false);
+    Fan fan1("F001", "Ceiling Fan", 75, false, 1.5);
+    AC ac1("AC001", "Split AC", 1000, false, 30, 25);
+    SecuritySystems s1("S001", "Home Alarm", 100, true, "admin123");
+
+    RegularUser regularUser("U001", "Regular User", 1);
+    MaintenanceStaff maintenanceStaff("U002", "Maintenance Staff", 2);
+
+    light1.turnOn();
+    fan1.turnOn();
+    ac1.turnOn();
+    s1.turnOff();
+
+    cout << "Light Power Usage: " << light1.calculatePowerUsage(5) << " watts" << endl;
+    cout << "Fan Power Usage: " << fan1.calculatePowerUsage(3) << " watts" << endl;
+    cout << "AC Power Usage: " << ac1.calculatePowerUsage(6) << " watts" << endl;
+    cout << "Security System Power Usage: " << s1.calculatePowerUsage(24) << " watts" << endl;
+
+    regularUser.viewAccessibleDevices();
+    maintenanceStaff.viewAccessibleDevices();
+
+    MaintenanceTool tool;
+    tool.resetSecurity(s1);
+
+    accessSecurityLogs(maintenanceStaff);
+    return 0;
 }
