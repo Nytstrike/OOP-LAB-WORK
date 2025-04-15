@@ -1,3 +1,5 @@
+//Compile code : g++ main.cpp book.cpp -o myfile.exe
+//run code: ./myfile.exe
 #include <iostream>
 #include "book.h"
 
